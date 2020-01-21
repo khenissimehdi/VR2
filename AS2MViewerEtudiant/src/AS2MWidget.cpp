@@ -80,8 +80,7 @@ bool AS2MWidget::fillMask()
 bool AS2MWidget::fillMono()
 {
 /// --- TODO : Chargement des images mono
-
-    return true;
+    return this->fillVector("ruinart_", this->imgMask);
 }
 
 // calcul des anaglyphes
@@ -119,7 +118,7 @@ void AS2MWidget::paintImage(const QImage & img) const
 
 void AS2MWidget::paintMono() const
 {
-/// --- TODO : Dessin de l'image mono
+    /// --- TODO : Dessin de l'image mono
 
 }
 
