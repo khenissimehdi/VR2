@@ -1,6 +1,6 @@
 ﻿#include <QApplication>
 #include <QMessageBox>
-#include "as2mwidget.h"
+#include "AS2MWidget.h"
 
 int main(int argc, char *argv[])
 {

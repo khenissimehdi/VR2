@@ -1,4 +1,4 @@
-﻿#include "as2mwidget.h"
+﻿#include "AS2MWidget.h"
 #include <QApplication>
 #include <QMessageBox>
 #include <QKeyEvent>
@@ -24,7 +24,7 @@ AS2MWidget::AS2MWidget(const QString & basename, int tv, int numView, QWidget *p
         // on modifie le titre de la fenêtre
         this->setWindowTitle("AS2MWidget : séquence d'images " + this->basename);
         // on ajuste la taille de la fenêtre : à activer après codage du chargement des images
-        // this->resize(this->imgMono[0].size());
+        this->resize(this->imgMono[0].size());
         // on calcule les images anaglyphes
         this->fillAnag();
         // on calcule l'image multistéréo (si demandé car modification de la taille nécessaire)
@@ -39,11 +39,11 @@ AS2MWidget::AS2MWidget(const QString & basename, int tv, int numView, QWidget *p
 // permet au main de savoir si les images ont été chargées correctement
 bool AS2MWidget::imagesLoaded() const
 {
-//    return this->imgMask.size() == AS2MWidget::nbImages &&
-//            this->imgMono.size() == AS2MWidget::nbImages;
+    return this->imgMask.size() == AS2MWidget::nbImages &&
+           this->imgMono.size() == AS2MWidget::nbImages;
 
-// renvoie vrai initialement sinon l'application se termine sans afficher la fenêtre
-    return true;
+//  renvoie vrai initialement sinon l'application se termine sans afficher la fenêtre
+//  return true;
 }
 
 // méthode pour charger une série d'images dans un QVector
@@ -80,13 +80,34 @@ bool AS2MWidget::fillMask()
 bool AS2MWidget::fillMono()
 {
 /// --- TODO : Chargement des images mono
-    return this->fillVector("ruinart_", this->imgMask);
+    return this->fillVector(basename, this->imgMono);
 }
 
 // calcul des anaglyphes
 void AS2MWidget::fillAnag()
 {
 /// --- TODO : Calculs des images anaglyphes
+    this->fillVector(basename, this->imgMono);
+
+    for (int img = 0; img < this->imgMono.size()-1; img++)
+    {
+        QImage IA = imgMono[img];
+        QImage IG = imgMono[img];
+        QImage ID = imgMono[img+1];
+        for (int x = 0; x < (this->imgMono[img]).width(); x++)
+        {
+            for (int y = 0; y < (this->imgMono[img]).height(); y++)
+            {
+                QColor colorIG = (IG.pixelColor(x,y));
+                QColor colorID = (ID.pixelColor(x,y));
+                QColor colorIA = (IA.pixelColor(x,y));
+                colorIA.setRgb(colorIG.red(),colorID.blue(),colorID.green());
+            }
+        }
+        this->imgAnagRB =
+    }
+
+
 
 }
 
@@ -119,25 +140,37 @@ void AS2MWidget::paintImage(const QImage & img) const
 void AS2MWidget::paintMono() const
 {
     /// --- TODO : Dessin de l'image mono
+    this->paintImage(imgMono[this->numView]);
 
 }
 
 void AS2MWidget::paintStereo() const
 {
 /// --- TODO : Dessin du couple de vues stéréoscopiques
-
+    if(this->swapEyes) {
+        glDrawBuffer(GL_BACK_RIGHT);
+        this->paintImage(imgMono[this->numView]);
+        glDrawBuffer(GL_BACK_LEFT);
+        this->paintImage(imgMono[this->numView+1]);
+    }
+    else {
+        glDrawBuffer(GL_BACK_LEFT);
+        this->paintImage(imgMono[this->numView]);
+        glDrawBuffer(GL_BACK_RIGHT);
+        this->paintImage(imgMono[this->numView+1]);
+    }
 }
 
 void AS2MWidget::paintAnagRB() const
 {
 /// --- TODO : Dessin du couple de vues en anaglyphe rouge-bleu
-
+    this->paintImage(imgAnagRB[this->numView]);
 }
 
 void AS2MWidget::paintAnagRC() const
 {
 /// --- TODO : Dessin du couple de vues en anaglyphe rouge-cyan
-
+    this->paintImage(imgAnagRC[this->numView]);
 }
 
 void AS2MWidget::paintMulti() const
@@ -163,7 +196,28 @@ void AS2MWidget::paintGL()
 {
     glClear(GL_COLOR_BUFFER_BIT);
 /// --- TODO - Dessin avec le type de rendu désiré
-
+    switch (this->typeView) {
+        // MONO
+        case MONO:
+            paintMono();
+            break;
+        // ANAG_RB
+        case ANAG_RB:
+            paintAnagRB();
+            break;
+        // ANAG_RC
+        case ANAG_RC:
+            paintAnagRC();
+            break;
+        // STEREO
+        case STEREO:
+            paintStereo();
+            break;
+        // MULTI
+        case MULTI:
+            paintMulti();
+            break;
+    }
 }
 
 void AS2MWidget::keyPressEvent(QKeyEvent *event)
@@ -175,6 +229,11 @@ void AS2MWidget::keyPressEvent(QKeyEvent *event)
         break;
 
         /// --- TODO : changement du mode de rendu
+    case Qt::Key_S:
+        this->swapEyes = !swapEyes;
+        updateGL();
+        break;
+
 
 
         /// --- TODO : échange de l'affichage des images gauche-droite
