@@ -9,7 +9,8 @@
 
 const int     AS2MWidget::nbImages  = 8;
 const QSize   AS2MWidget::sizeMulti = QSize(1920,1080);
-
+const static QString author = "malherbe";
+QString namefile;
 
 AS2MWidget::AS2MWidget(const QString & basename, int tv, int numView, QWidget *parent) :
     QGLWidget(parent),
@@ -54,6 +55,7 @@ bool AS2MWidget::fillVector(const QString & base, QVector<QImage> & vector)
     bool res(true);
     QString filename;
     QImage tmp;
+    this.namefile = filename;
     QString dataPath = "R:/TP_AS2M/data/";
     if ( !QDir(dataPath).exists() ) dataPath = "./data/";
 
@@ -101,10 +103,10 @@ void AS2MWidget::fillAnag()
         {
             for (int y = 0; y < (this->imgMono[img]).height(); y++)
             {
-                QColor colorD = imgG.pixel(x,y);
-                QColor colorG = imgD.pixel(x,y);
-                QColor rgbImgRC = qRgb(colorD.red(), colorG.green(), colorG.blue());
-                QColor rgbImgRB = qRgb(colorD.red(), ((colorD.green() + colorG.green())/2), colorG.blue());
+                QRgb colorD = imgG.pixel(x,y);
+                QRgb colorG = imgD.pixel(x,y);
+                QRgb rgbImgRC = qRgb(colorD.red(), colorG.green(), colorG.blue());
+                QRgb rgbImgRB = qRgb(colorD.red(), ((colorD.green() + colorG.green())/2), colorG.blue());
                 imgRC.setPixel(x,y,rgbImgRC.rgb());
                 imgRB.setPixel(x,y,rgbImgRB.rgb());
             }
@@ -124,13 +126,40 @@ void AS2MWidget::saveAnag() const
 void AS2MWidget::fillMult()
 {
 /// --- TODO : Calcule l'image composite pour l'écran multiscopique
-
+    this->fillVector(basename, this->imgMono);
+    this->imgMult = QImage(this->sizeMulti, imgMono[0].format());
+    
+    
+    for(int x = 0; x < imgMult.width(); x++) {
+        for (int y = 0; y < imgMult.height(); y++) {
+            QColor pixelRgb;
+            QImage pixel = imgMask[i].pixelColor(x, y);
+            QReal r = 0;
+            QReal g = 0;
+            QReal b = 0;
+            for(int i=0; i< nbImages; i++){
+                r += imgMono[i].pixelColor(x, y).redF() * pixel.redF();
+                g += imgMono[i].pixelColor(x, y).greenF() * pixel.greenF();
+                b += imgMono[i].pixelColor(x, y).blueF() * pixel.blueF();
+            }
+            QColor pixelRgb;
+            pixelRgb.setRgbF(r, g, b);
+            this->imgMult.setPixelColor(x, y, pixelRgb);
+        }
 }
 
 void AS2MWidget::saveMult() const
 {
-/// --- TODO : Sauvegarde de l'image composite
-
+    (this->imgMult).save("./results/".this.author.'_'.this.namefile);
+    
+    if (imgMult.isNull())
+    {
+        qDebug("Ereur durant la sauvegarde !");
+    }
+    else
+    {
+        qDebug("La sauvegarde a été réalisé.");
+    }
 }
 
 // méthode d'affichage d'une QImage sous OpenGL
@@ -179,7 +208,7 @@ void AS2MWidget::paintAnagRC() const
 void AS2MWidget::paintMulti() const
 {
 /// --- TODO : Dessin de l'image composite
-
+    this->paintImage(this->imgMult);
 }
 
 void AS2MWidget::initializeGL()
@@ -237,7 +266,9 @@ void AS2MWidget::keyPressEvent(QKeyEvent *event)
         updateGL();
         break;
 
-
+    case (Qt::CTRL and Qt::Key_S):
+        // TODO
+        break;
 
         /// --- TODO : échange de l'affichage des images gauche-droite
 
