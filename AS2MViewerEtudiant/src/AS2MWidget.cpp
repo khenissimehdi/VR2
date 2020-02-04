@@ -1,9 +1,11 @@
-﻿#include "AS2MWidget.h"
+#include "AS2MWidget.h"
 #include <QApplication>
 #include <QMessageBox>
 #include <QKeyEvent>
 #include <QtDebug>
 #include <QDir>
+#include <QRgb>
+#include <QImage>
 
 const int     AS2MWidget::nbImages  = 8;
 const QSize   AS2MWidget::sizeMulti = QSize(1920,1080);
@@ -32,7 +34,7 @@ AS2MWidget::AS2MWidget(const QString & basename, int tv, int numView, QWidget *p
     }
     else
     {
-        QMessageBox::critical(NULL,"AS2MViewer","Erreur lors du chargement des images.");
+        QMessageBox::critical(nullptr,"AS2MViewer","Erreur lors du chargement des images.");
     }
 }
 
@@ -91,24 +93,25 @@ void AS2MWidget::fillAnag()
 
     for (int img = 0; img < this->imgMono.size()-1; img++)
     {
-        QImage IA = imgMono[img];
-        QImage IG = imgMono[img];
-        QImage ID = imgMono[img+1];
+        QImage imgG = imgMono[img];
+        QImage imgD = imgMono[img+1];
+        QImage imgRC = QImage(imgG.width(), imgG.height(), imgG.format());
+        QImage imgRB = QImage(imgG.width(), imgG.height(), imgG.format());
         for (int x = 0; x < (this->imgMono[img]).width(); x++)
         {
             for (int y = 0; y < (this->imgMono[img]).height(); y++)
             {
-                QColor colorIG = (IG.pixelColor(x,y));
-                QColor colorID = (ID.pixelColor(x,y));
-                QColor colorIA = (IA.pixelColor(x,y));
-                colorIA.setRgb(colorIG.red(),colorID.blue(),colorID.green());
+                QColor colorD = imgG.pixel(x,y);
+                QColor colorG = imgD.pixel(x,y);
+                QColor rgbImgRC = qRgb(colorD.red(), colorG.green(), colorG.blue());
+                QColor rgbImgRB = qRgb(colorD.red(), ((colorD.green() + colorG.green())/2), colorG.blue());
+                imgRC.setPixel(x,y,rgbImgRC.rgb());
+                imgRB.setPixel(x,y,rgbImgRB.rgb());
             }
-        }
-        this->imgAnagRB =
+         }
+        this->imgAnagRB.push_back(imgRB);
+        this->imgAnagRC.push_back(imgRC);
     }
-
-
-
 }
 
 void AS2MWidget::saveAnag() const
